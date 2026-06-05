@@ -8,11 +8,21 @@ import readline from "node:readline/promises";
 const modules = [
   { id: "execplans", label: "ExecPlan workflow", recommended: true },
   { id: "vite-plus", label: "Vite+ command gateway", recommended: true },
+  { id: "spec-governance", label: "docs/specs decision ledger", recommended: false },
+  { id: "typed-env", label: "typed env config with production assertions", recommended: false },
+  { id: "di-boundaries", label: "feature-local composition roots and explicit DI", recommended: false },
+  { id: "test-factories", label: "pure test factories and mock repository templates", recommended: false },
   { id: "tanstack-start", label: "TanStack Start app scaffold", recommended: false },
   { id: "playwright-pom", label: "Playwright POM E2E scaffold", recommended: false },
   { id: "testcontainers-e2e", label: "Testcontainers parallel E2E support", recommended: false },
+  { id: "generated-boundaries", label: "generated/vendored code boundary governance", recommended: true },
+  { id: "validation-gates", label: "aggregate and focused validation gates", recommended: true },
   { id: "review-toolchain", label: "similarity-ts, Knip, dependency-cruiser", recommended: true },
+  { id: "review-rubric", label: "project-specific review skill and rubric", recommended: false },
+  { id: "skill-lifecycle", label: "project-local skills and prompt evaluation", recommended: false },
   { id: "commit-governance", label: "commitlint hook and frequent commits", recommended: true },
+  { id: "workspace-supply-chain", label: "pnpm workspace catalog and trust policy", recommended: false },
+  { id: "license-safe", label: "license-safe extraction and attribution rules", recommended: true },
 ];
 
 const moduleIds = new Set(modules.map((module) => module.id));
@@ -192,17 +202,47 @@ async function applyModules(selected, context) {
   if (selected.includes("execplans")) {
     await applyExecPlans(context);
   }
+  if (selected.includes("spec-governance")) {
+    await applySpecGovernance(context);
+  }
 
   await applyAgentsSection(selected, context);
 
   if (selected.includes("vite-plus")) {
     await applyVitePlus(context);
   }
+  if (selected.includes("validation-gates")) {
+    await applyValidationGates(context);
+  }
+  if (selected.includes("generated-boundaries")) {
+    await applyGeneratedBoundaries(context);
+  }
+  if (selected.includes("license-safe")) {
+    await applyLicenseSafe(context);
+  }
   if (selected.includes("commit-governance")) {
     await applyCommitGovernance(context);
   }
   if (selected.includes("review-toolchain")) {
     await applyReviewToolchain(context);
+  }
+  if (selected.includes("review-rubric")) {
+    await applyReviewRubric(context);
+  }
+  if (selected.includes("skill-lifecycle")) {
+    await applySkillLifecycle(context);
+  }
+  if (selected.includes("workspace-supply-chain")) {
+    await applyWorkspaceSupplyChain(context);
+  }
+  if (selected.includes("typed-env")) {
+    await applyTypedEnv(context);
+  }
+  if (selected.includes("di-boundaries")) {
+    await applyDiBoundaries(context);
+  }
+  if (selected.includes("test-factories")) {
+    await applyTestFactories(context);
   }
   if (selected.includes("tanstack-start")) {
     await applyTanStackStart(context);
@@ -241,6 +281,17 @@ function buildAgentsSection(selected, context) {
     );
   }
 
+  if (selected.includes("spec-governance")) {
+    lines.push(
+      "## Spec Governance",
+      "",
+      "Important architecture, API, data-model, security, testing, and deployment decisions belong in `docs/specs`, not only in chat, commits, PRs, or ExecPlans.",
+      "When changing an enduring decision, add a dated note such as `Revision note (2026-06-05): ...` to the most relevant spec.",
+      "Treat ExecPlans as execution history and specs as the current design ledger.",
+      "",
+    );
+  }
+
   if (selected.includes("vite-plus")) {
     lines.push(
       "## Vite+",
@@ -251,12 +302,53 @@ function buildAgentsSection(selected, context) {
     );
   }
 
+  if (selected.includes("validation-gates")) {
+    lines.push(
+      "## Validation Gates",
+      "",
+      "Use an aggregate readiness command for final signoff when practical, and focused validation commands for touched areas.",
+      "Keep the command map in this file current. If Docker, browsers, or external services are unavailable, record the exact blocker and still run unit/component/static validation.",
+      "",
+    );
+  }
+
+  if (selected.includes("generated-boundaries")) {
+    lines.push(
+      "## Generated And Vendored Boundaries",
+      "",
+      "Generated files, vendored references, submodules, and UI inventories must not be deleted or rewritten solely because lint, Knip, dependency-cruiser, or similarity review reports them.",
+      "Keep ignore groups named and shared across tooling where possible, for example generated route trees, UI inventories, reference docs, and local tool caches.",
+      "",
+    );
+  }
+
   if (selected.includes("tanstack-start")) {
     lines.push(
       "## TanStack Start",
       "",
       "Keep routes in `src/routes`, feature-local server functions in `src/features/<feature>/api/functions.ts`, and production dependency wiring next to those server functions in `api/dependencies.ts`.",
       "Put server-only dependencies behind `@tanstack/react-start/server-only` boundaries. Route files must not import database clients, secrets, or concrete side-effect adapters directly.",
+      "",
+    );
+  }
+
+  if (selected.includes("typed-env")) {
+    lines.push(
+      "## Typed Environment",
+      "",
+      "Define runtime env in typed schema modules. Local development may have safe defaults, but production secrets, origins, and database URLs must be explicitly provided and asserted.",
+      "Keep server env and browser-public env separate. Use `ENV()` only in composition roots; pass explicit config into application/usecase code.",
+      "",
+    );
+  }
+
+  if (selected.includes("di-boundaries")) {
+    lines.push(
+      "## Dependency Injection Boundaries",
+      "",
+      "Feature API modules and route factories are production composition roots. Usecases receive complete, non-optional dependency objects and must not choose production defaults internally.",
+      "Inject side effects such as DB, repositories, fetch/client, clock, ID/random, crypto, and env. Import pure deterministic helpers directly.",
+      "Avoid `dependencies?: ...`, `dependencies = {}`, repository singletons, and `dependency ?? defaultDependency` inside usecases.",
       "",
     );
   }
@@ -272,7 +364,20 @@ function buildAgentsSection(selected, context) {
     );
   }
 
+  if (selected.includes("test-factories")) {
+    lines.push(
+      "## Test Factories",
+      "",
+      "Build test data with pure `buildXxx(overrides)` factories under `tests/support/factories`. Factories return typed objects only and must not open databases, start containers, call repositories, or mutate globals.",
+      "Add side-effecting fixture helpers only for real cross-test workflows. Prefer repositories or narrow database helpers over raw SQL unless the behavior under test is SQL-specific.",
+      "",
+    );
+  }
+
   if (selected.includes("review-toolchain")) {
+    const knipCommand = selected.includes("vite-plus")
+      ? "vp run knip"
+      : "npm run knip # or the equivalent package-manager command";
     lines.push(
       "## Review Toolchain",
       "",
@@ -282,13 +387,34 @@ function buildAgentsSection(selected, context) {
       "similarity-ts src --exclude routeTree.gen.ts --exclude components/ui --threshold 0.9 --types --classes --suggest",
       "```",
       "",
-      "Run Knip through Vite+ and manually verify findings before deleting files or packages:",
+      "Run Knip through the project package script and manually verify findings before deleting files or packages:",
       "",
       "```bash",
-      "vp run knip",
+      knipCommand,
       "```",
       "",
       "Use dependency-cruiser for explicit architecture boundaries when the app defines them. Prefer fixing dependency direction over adding broad ignores.",
+      "",
+    );
+  }
+
+  if (selected.includes("review-rubric")) {
+    lines.push(
+      "## Review Rubric",
+      "",
+      "Before reviews or refactors, apply the project-specific review skill and prioritize bugs, hidden side effects, weak modeling, brittle tests, dependency-boundary drift, type escapes, and missing failure cases.",
+      "For large or self-authored changes, ask a fresh reviewer/subagent for risks and test sufficiency when available.",
+      "",
+    );
+  }
+
+  if (selected.includes("skill-lifecycle")) {
+    lines.push(
+      "## Skill Lifecycle",
+      "",
+      "Reusable project knowledge should become project-local skills under `.agents/skills`. Skills are not complete just because they were created.",
+      "After creating or heavily revising a skill or important prompt, forward-test it with a fresh agent and a fixed checklist, or record the blocker that prevented evaluation.",
+      "Do not copy external skill bodies into this repository unless the license permits it; prefer original guidance and installer commands.",
       "",
     );
   }
@@ -299,6 +425,27 @@ function buildAgentsSection(selected, context) {
       "",
       "Commit frequently after coherent milestones. Do not stage unrelated user changes. If the worktree is mixed, stage explicit file paths.",
       "Use conventional commit messages such as `docs(execplan): add setup plan`, `test(web): add e2e harness`, or `chore(tooling): add commitlint hook`.",
+      "",
+    );
+  }
+
+  if (selected.includes("workspace-supply-chain")) {
+    lines.push(
+      "## Workspace Supply Chain",
+      "",
+      "Centralize shared dependency versions in the workspace catalog when the package manager supports it. Avoid scattered package-local pins unless a package has a real compatibility reason.",
+      "Do not weaken minimum release age, trust policy, or exotic subdependency protections without a dated design note.",
+      "",
+    );
+  }
+
+  if (selected.includes("license-safe")) {
+    lines.push(
+      "## License-Safe Extraction",
+      "",
+      "When turning project practices into reusable skills or templates, write original guidance rather than copying third-party text. If code/templates are vendored, preserve required license and notice files.",
+      "Do not include secrets, customer data, proprietary prompts, unpublished private docs, or project-specific service identifiers in distributable skill assets.",
+      "For external skills, prefer `$skill-installer` plus a lock entry over copying the upstream skill into the repo.",
       "",
     );
   }
@@ -323,6 +470,21 @@ async function applyExecPlans(context) {
   await writeIfAbsent(path.join(root, ".agents", "PLANS.md"), execPlansTemplate(), context.state);
 }
 
+async function applySpecGovernance(context) {
+  await ensureDir(path.join(root, "docs", "specs"), context.state);
+  await writeIfAbsent(path.join(root, "docs", "specs", "README.md"), specsReadmeTemplate(), context.state);
+  await writeIfAbsent(
+    path.join(root, "docs", "specs", "01_scope_and_principles.md"),
+    scopeSpecTemplate(),
+    context.state,
+  );
+  await writeIfAbsent(
+    path.join(root, "docs", "specs", "02_architecture.md"),
+    architectureSpecTemplate(),
+    context.state,
+  );
+}
+
 async function applyVitePlus(context) {
   await updateRootPackageJson(context.state, (pkg) => {
     pkg.type ??= "module";
@@ -334,6 +496,33 @@ async function applyVitePlus(context) {
   });
 
   await writeIfAbsent(path.join(root, "vite.config.ts"), rootViteConfigTemplate(), context.state);
+}
+
+async function applyValidationGates(context) {
+  await updateRootPackageJson(context.state, (pkg) => {
+    pkg.scripts ??= {};
+    pkg.scripts.ready ??= "vp run fmt && vp lint && vp run test -r && vp run build -r";
+  });
+  await ensureDir(path.join(root, ".agents"), context.state);
+  await writeIfAbsent(path.join(root, ".agents", "validation-gates.md"), validationGatesTemplate(), context.state);
+}
+
+async function applyGeneratedBoundaries(context) {
+  await ensureDir(path.join(root, ".agents"), context.state);
+  await writeIfAbsent(
+    path.join(root, ".agents", "generated-boundaries.md"),
+    generatedBoundariesTemplate(),
+    context.state,
+  );
+}
+
+async function applyLicenseSafe(context) {
+  await ensureDir(path.join(root, "docs", "setup"), context.state);
+  await writeIfAbsent(
+    path.join(root, "docs", "setup", "license-safe-extraction.md"),
+    licenseSafeExtractionTemplate(),
+    context.state,
+  );
 }
 
 async function applyCommitGovernance(context) {
@@ -357,6 +546,7 @@ async function applyReviewToolchain(context) {
   await updateRootPackageJson(context.state, (pkg) => {
     pkg.scripts ??= {};
     pkg.scripts.knip ??= "knip";
+    pkg.scripts.similarity ??= "similarity-ts src --exclude routeTree.gen.ts --exclude components/ui --threshold 0.9 --types --classes --suggest";
     if (context.packageName && context.appDirRelative) {
       const scriptName = `depcruise:${path.basename(context.appDirRelative)}`;
       pkg.scripts[scriptName] ??= `vp run ${context.packageName}#depcruise`;
@@ -364,6 +554,7 @@ async function applyReviewToolchain(context) {
     pkg.devDependencies ??= {};
     pkg.devDependencies.knip ??= "latest";
     pkg.devDependencies["dependency-cruiser"] ??= "latest";
+    pkg.devDependencies["similarity-ts"] ??= "latest";
   });
   await writeIfAbsent(path.join(root, "knip.json"), knipTemplate(context), context.state);
   if (context.appDir) {
@@ -380,6 +571,87 @@ async function applyReviewToolchain(context) {
       pkg.devDependencies["dependency-cruiser"] ??= "latest";
     }, packageTemplate(context.packageName));
   }
+}
+
+async function applyReviewRubric(context) {
+  await ensureDir(path.join(root, "docs"), context.state);
+  await writeIfAbsent(path.join(root, "docs", "review-points.md"), reviewPointsTemplate(), context.state);
+  const skillDir = path.join(root, ".agents", "skills", "project-code-review");
+  await ensureDir(skillDir, context.state);
+  await writeIfAbsent(path.join(skillDir, "SKILL.md"), projectCodeReviewSkillTemplate(), context.state);
+  await ensureDir(path.join(skillDir, "agents"), context.state);
+  await writeIfAbsent(
+    path.join(skillDir, "agents", "openai.yaml"),
+    projectCodeReviewOpenAiTemplate(),
+    context.state,
+  );
+}
+
+async function applySkillLifecycle(context) {
+  const skillDir = path.join(root, ".agents", "skills", "skill-improvement");
+  await ensureDir(skillDir, context.state);
+  await writeIfAbsent(path.join(skillDir, "SKILL.md"), skillImprovementTemplate(), context.state);
+  await ensureDir(path.join(skillDir, "agents"), context.state);
+  await writeIfAbsent(
+    path.join(skillDir, "agents", "openai.yaml"),
+    skillImprovementOpenAiTemplate(),
+    context.state,
+  );
+  await writeIfAbsent(path.join(root, "skills-lock.json"), skillsLockTemplate(), context.state);
+}
+
+async function applyWorkspaceSupplyChain(context) {
+  await updateRootPackageJson(context.state, (pkg) => {
+    pkg.packageManager ??= "pnpm@10";
+    pkg.engines ??= {};
+    pkg.engines.node ??= ">=22.12.0";
+  });
+  await writeIfAbsent(path.join(root, "pnpm-workspace.yaml"), pnpmWorkspaceTemplate(), context.state);
+}
+
+async function applyTypedEnv(context) {
+  requireAppDir(context, "typed-env");
+  await updateJsonFile(path.join(context.appDir, "package.json"), context.state, (pkg) => {
+    pkg.dependencies ??= {};
+    pkg.dependencies.zod ??= "latest";
+    pkg.devDependencies ??= {};
+    pkg.devDependencies.vitest ??= "latest";
+  }, packageTemplate(context.packageName));
+  await writeIfAbsent(path.join(context.appDir, "src", "config", "env.ts"), envTemplate(), context.state);
+  await writeIfAbsent(
+    path.join(context.appDir, "src", "config", "public-env.ts"),
+    publicEnvTemplate(),
+    context.state,
+  );
+  await writeIfAbsent(path.join(context.appDir, "src", "config", "env.test.ts"), envTestTemplate(), context.state);
+  await writeIfAbsent(path.join(context.appDir, ".env.example"), envExampleTemplate(), context.state);
+}
+
+async function applyDiBoundaries(context) {
+  requireAppDir(context, "di-boundaries");
+  const templateDir = path.join(context.appDir, ".agents", "templates", "di-boundaries");
+  await ensureDir(templateDir, context.state);
+  await writeIfAbsent(path.join(templateDir, "dependencies.ts"), diDependenciesTemplate(), context.state);
+  await writeIfAbsent(path.join(templateDir, "usecase.ts"), diUsecaseTemplate(), context.state);
+}
+
+async function applyTestFactories(context) {
+  requireAppDir(context, "test-factories");
+  await writeIfAbsent(
+    path.join(context.appDir, "tests", "support", "factories", "example.ts"),
+    testFactoryExampleTemplate(),
+    context.state,
+  );
+  await writeIfAbsent(
+    path.join(context.appDir, "tests", "support", "factories", "index.ts"),
+    testFactoryIndexTemplate(),
+    context.state,
+  );
+  await writeIfAbsent(
+    path.join(context.appDir, "tests", "support", "mock-repositories.ts"),
+    mockRepositoriesTemplate(),
+    context.state,
+  );
 }
 
 async function applyTanStackStart(context) {
@@ -662,6 +934,58 @@ Validation is not optional. Include exact commands, working directory, expected 
 `;
 }
 
+function specsReadmeTemplate() {
+  return `# Specs
+
+This directory is the durable design ledger for the project.
+
+Use specs for enduring architecture, API, data-model, security, testing, deployment, and product-shape decisions. Use ExecPlans for task execution history.
+
+When a decision changes, add a dated revision note:
+
+Revision note (2026-06-05): Example decision and rationale.
+
+Suggested starting files:
+
+- 01_scope_and_principles.md
+- 02_architecture.md
+`;
+}
+
+function scopeSpecTemplate() {
+  return `# Scope And Principles
+
+Revision note (2026-06-05): Initial scaffold. Replace this note with project-specific scope and constraints.
+
+## Scope
+
+Describe what this project owns, what it does not own, and which users or systems it serves.
+
+## Principles
+
+Record durable engineering principles that should guide implementation and review.
+`;
+}
+
+function architectureSpecTemplate() {
+  return `# Architecture
+
+Revision note (2026-06-05): Initial scaffold. Replace this note with project-specific architecture boundaries.
+
+## Boundaries
+
+Describe the main source folders, ownership boundaries, dependency direction, and composition roots.
+
+## Runtime State
+
+Describe which state is durable and where it is persisted. Do not rely on process memory for cross-request, session, credential, token, protocol, or job state in horizontally scaled runtimes.
+
+## Validation
+
+List the commands that prove architecture boundaries are still respected.
+`;
+}
+
 function rootViteConfigTemplate() {
   return `import { defineConfig } from "vite-plus";
 
@@ -691,6 +1015,58 @@ export default defineConfig({
     passWithNoTests: true,
   },
 });
+`;
+}
+
+function validationGatesTemplate() {
+  return `# Validation Gates
+
+Use this file to keep aggregate and focused validation commands discoverable.
+
+## Aggregate
+
+- vp check
+- vp test
+- vp run ready
+
+## Focused
+
+- Backend usecases: vp run <package>#test -- --run <paths>
+- Dependency boundaries: vp run <depcruise-script>
+- Browser flows: vp run <package>#e2e
+- Storybook: vp run <package>#storybook:coverage
+
+Record exact blockers when Docker, browsers, or external services are unavailable.
+`;
+}
+
+function generatedBoundariesTemplate() {
+  return `# Generated And Vendored Boundaries
+
+Treat these categories as owned by their generator, upstream source, or package inventory:
+
+- Generated route trees and generated API clients
+- UI component inventories
+- docs/references and vendored reference material
+- git submodules
+- local tool caches
+
+Do not delete or rewrite these files solely because review tools report unused files, duplicate code, or formatting issues. Update shared ignore patterns instead.
+`;
+}
+
+function licenseSafeExtractionTemplate() {
+  return `# License-Safe Extraction
+
+This project may contain setup patterns worth turning into reusable skills or templates. Keep extraction license-safe:
+
+- Write original guidance instead of copying third-party text.
+- If vendoring third-party code or templates, include the license and required notices.
+- Prefer installer commands and lock entries for external skills.
+- Do not include secrets, tokens, customer data, proprietary prompts, unpublished private docs, or project-specific service identifiers in distributable assets.
+- Strip domain-only business logic from generic scaffolding.
+
+This document is process guidance, not legal advice. Ask the repository owner before distributing material with unclear licensing.
 `;
 }
 
@@ -767,6 +1143,144 @@ module.exports = {
 `;
 }
 
+function reviewPointsTemplate() {
+  return `# Review Points
+
+Use this file to record repository-specific review values. Keep it concise and update the paired project-code-review skill when these rules change.
+
+## High-Priority Findings
+
+- Hidden production defaults inside usecases.
+- Optional dependency objects that should be explicit.
+- Direct imports of DB, env, fetch/client, clocks, crypto, or random IDs where dependency injection is expected.
+- Tests that need global stubs for code that should accept dependencies.
+- Large files that mix unrelated responsibilities.
+- Vague utility modules that hide domain meaning.
+- Type-safety escapes such as any, casual unknown, broad casts, or weak DTO modeling.
+- Hand-rolled parsing, signing, crypto, or protocol machinery when proven libraries are available.
+
+## Review Process
+
+Read the diff and nearby code first. Report correctness, testability, maintainability, and architecture risks before style.
+`;
+}
+
+function projectCodeReviewSkillTemplate() {
+  return `---
+name: project-code-review
+description: Use when reviewing code, refactors, backend changes, tests, or architecture consistency in this repository. Focuses on dependency injection, side-effect boundaries, testability, file size, helper placement, consistency, coverage, independent review, and type safety.
+---
+
+# Project Code Review
+
+Use this skill for repository-specific reviews and refactors.
+
+## Stance
+
+Lead with bugs, hidden side effects, weak modeling, brittle tests, missing failure cases, and architecture drift. Style is secondary.
+
+## Review Checks
+
+- Look for optional/default dependency objects that hide required inputs.
+- Confirm production defaults live in composition roots, not usecases.
+- Confirm side effects are injected: database, repositories, fetch/client, time, random IDs, crypto, env, and external services.
+- Prefer pure helper imports over injecting deterministic helpers.
+- Flag tests that need global stubs for code that should accept dependencies.
+- Check large files for cohesive extraction opportunities.
+- Check helper placement and vague utility modules.
+- Check type-safety escapes such as any, casual unknown, broad casts, and weak DTOs.
+- Prefer proven libraries for crypto, parsing, signing, and protocol state machines.
+
+## Useful Searches
+
+Run searches that match this repository before reporting findings:
+
+    rg -n 'dependencies\\?:|dependencies\\s*=\\s*\\{|= \\{\\}\\)|\\?\\?\\s*(fetch|db|ENV|new Date|crypto|randomUUID)|stubGlobal\\(|vi\\.stubGlobal\\(' src tests
+    rg -n '\\bany\\b|\\bunknown\\b| as [A-Za-z0-9_$<>{}, \\[\\]|&]+' src tests
+
+Use mechanical tool output as leads, not automatic findings.
+`;
+}
+
+function projectCodeReviewOpenAiTemplate() {
+  return `interface:
+  display_name: "Project Code Review"
+  short_description: "Review project-specific architecture risks"
+  default_prompt: "Use $project-code-review to review this change for bugs, boundaries, tests, and type safety."
+`;
+}
+
+function skillImprovementTemplate() {
+  return `---
+name: skill-improvement
+description: Use when creating, revising, or validating project-local skills or important agent prompts. Guides fresh-agent forward testing, checklist-based evaluation, and license-safe skill extraction.
+---
+
+# Skill Improvement
+
+Use this skill before finalizing a new or heavily revised skill.
+
+## Workflow
+
+1. Check that frontmatter description and body cover the same trigger scope.
+2. Define two realistic scenarios and one edge scenario when practical.
+3. Write a fixed checklist for each scenario. Mark at least one item as critical.
+4. Ask a fresh agent to use the skill on the scenario without giving it the expected answer.
+5. Evaluate both the artifact and the agent report: unclear points, discretionary choices, retries, and tool usage.
+6. Revise one theme at a time and repeat until new unclear points stop appearing or evaluation is blocked.
+
+## License Safety
+
+Do not copy external skill text into this project unless the license permits it. Prefer original project-specific guidance and installation commands for upstream skills.
+
+## Report Shape
+
+- Scenario
+- Checklist result
+- Unclear points
+- Discretionary choices
+- Retries
+- Revision made or blocker recorded
+`;
+}
+
+function skillImprovementOpenAiTemplate() {
+  return `interface:
+  display_name: "Skill Improvement"
+  short_description: "Forward-test and improve project skills"
+  default_prompt: "Use $skill-improvement to validate this skill with a fresh-agent checklist."
+`;
+}
+
+function skillsLockTemplate() {
+  return `{
+  "version": 1,
+  "skills": {}
+}
+`;
+}
+
+function pnpmWorkspaceTemplate() {
+  return `packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+blockExoticSubdeps: true
+catalogMode: prefer
+minimumReleaseAge: 4320
+minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeStrict: true
+trustPolicy: no-downgrade
+
+catalog:
+  typescript: latest
+  vite-plus: latest
+  vite: latest
+  vitest: latest
+`;
+}
+
 function tanstackViteConfigTemplate() {
   return `import { defineConfig } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -833,6 +1347,200 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   return <main><h1>App Ready</h1></main>;
+}
+`;
+}
+
+function envTemplate() {
+  return `import { z } from "zod";
+
+const localSecret = "local-development-secret-change-in-production";
+
+const serverEnvSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  DATABASE_URL: z.string().url().default("postgres://local:local@127.0.0.1:5432/app"),
+  APP_ORIGIN: z.string().url().default("http://127.0.0.1:3000"),
+  APP_SECRET: z.string().min(16).default(localSecret),
+});
+
+export type ServerEnv = z.infer<typeof serverEnvSchema>;
+
+export function ENV(input: NodeJS.ProcessEnv = process.env): ServerEnv {
+  const env = serverEnvSchema.parse(input);
+  assertExplicitProductionEnv(env);
+  return env;
+}
+
+export function assertExplicitProductionEnv(env: ServerEnv): void {
+  if (env.NODE_ENV !== "production") {
+    return;
+  }
+  const errors: string[] = [];
+  if (env.APP_SECRET === localSecret) {
+    errors.push("APP_SECRET must be explicitly set in production.");
+  }
+  if (isLoopbackUrl(env.APP_ORIGIN)) {
+    errors.push("APP_ORIGIN must not be loopback in production.");
+  }
+  if (isLoopbackUrl(env.DATABASE_URL)) {
+    errors.push("DATABASE_URL must not be loopback in production.");
+  }
+  if (errors.length > 0) {
+    throw new Error(errors.join(" "));
+  }
+}
+
+function isLoopbackUrl(value: string): boolean {
+  const host = new URL(value).hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+`;
+}
+
+function publicEnvTemplate() {
+  return `import { z } from "zod";
+
+const publicEnvSchema = z.object({
+  VITE_APP_ORIGIN: z.string().url().optional(),
+});
+
+export type PublicEnv = z.infer<typeof publicEnvSchema>;
+
+export function PUBLIC_ENV(input: ImportMetaEnv = import.meta.env): PublicEnv {
+  return publicEnvSchema.parse(input);
+}
+`;
+}
+
+function envTestTemplate() {
+  return `import { describe, expect, it } from "vitest";
+
+import { ENV } from "./env";
+
+describe("ENV", () => {
+  it("provides local defaults outside production", () => {
+    expect(ENV({ NODE_ENV: "development" } as NodeJS.ProcessEnv).APP_ORIGIN).toBe("http://127.0.0.1:3000");
+  });
+
+  it("rejects production defaults", () => {
+    expect(() => ENV({ NODE_ENV: "production" } as NodeJS.ProcessEnv)).toThrow(/APP_SECRET/);
+  });
+
+  it("accepts explicit production values", () => {
+    const env = ENV({
+      NODE_ENV: "production",
+      APP_SECRET: "production-secret-with-enough-length",
+      APP_ORIGIN: "https://app.example.test",
+      DATABASE_URL: "postgres://user:pass@db.example.test:5432/app",
+    } as NodeJS.ProcessEnv);
+
+    expect(env.NODE_ENV).toBe("production");
+  });
+});
+`;
+}
+
+function envExampleTemplate() {
+  return `NODE_ENV=development
+DATABASE_URL=postgres://local:local@127.0.0.1:5432/app
+APP_ORIGIN=http://127.0.0.1:3000
+APP_SECRET=local-development-secret-change-in-production
+VITE_APP_ORIGIN=http://127.0.0.1:3000
+`;
+}
+
+function diDependenciesTemplate() {
+  return `import "@tanstack/react-start/server-only";
+
+import { ENV } from "../../../src/config/env";
+
+export type ExampleUsecaseDependencies = {
+  fetch: typeof fetch;
+  now: () => Date;
+  idFactory: () => string;
+  env: Pick<ReturnType<typeof ENV>, "APP_ORIGIN">;
+};
+
+export function createExampleUsecaseDependencies(input: {
+  fetch: typeof fetch;
+}): ExampleUsecaseDependencies {
+  return {
+    fetch: input.fetch,
+    now: () => new Date(),
+    idFactory: crypto.randomUUID,
+    env: ENV(),
+  };
+}
+`;
+}
+
+function diUsecaseTemplate() {
+  return `export type ExampleUsecaseDependencies = {
+  fetch: typeof fetch;
+  now: () => Date;
+  idFactory: () => string;
+  env: { APP_ORIGIN: string };
+};
+
+export async function runExampleUsecase(
+  input: { url: string },
+  dependencies: ExampleUsecaseDependencies,
+): Promise<{ id: string; checkedAt: string; ok: boolean }> {
+  const response = await dependencies.fetch(input.url);
+  return {
+    id: dependencies.idFactory(),
+    checkedAt: dependencies.now().toISOString(),
+    ok: response.ok,
+  };
+}
+`;
+}
+
+function testFactoryExampleTemplate() {
+  return `export type ExampleRecord = {
+  id: string;
+  status: "active" | "disabled";
+  createdAt: string;
+};
+
+export function buildExampleRecord(overrides: Partial<ExampleRecord> = {}): ExampleRecord {
+  return {
+    id: "example-1",
+    status: "active",
+    createdAt: "2026-06-05T00:00:00.000Z",
+    ...overrides,
+  };
+}
+`;
+}
+
+function testFactoryIndexTemplate() {
+  return `export * from "./example";
+`;
+}
+
+function mockRepositoriesTemplate() {
+  return `export type InMemoryRepository<RecordType extends { id: string }> = {
+  get: (id: string) => Promise<RecordType | null>;
+  save: (record: RecordType) => Promise<void>;
+  list: () => Promise<RecordType[]>;
+};
+
+export function createInMemoryRepository<RecordType extends { id: string }>(
+  initialRecords: RecordType[] = [],
+): InMemoryRepository<RecordType> {
+  const records = new Map(initialRecords.map((record) => [record.id, record]));
+  return {
+    async get(id) {
+      return records.get(id) ?? null;
+    },
+    async save(record) {
+      records.set(record.id, record);
+    },
+    async list() {
+      return [...records.values()];
+    },
+  };
 }
 `;
 }
