@@ -1,4 +1,4 @@
 interface:
   display_name: "Modern Webapp Environment"
   short_description: "Bootstrap Codex-friendly webapp tooling"
-  default_prompt: "Use $modern-webapp-environment to inspect this repo, ask me which modules to install, then apply the selected environment setup."
+  default_prompt: "Use $modern-webapp-environment to check git status, ask me which modules to install, then apply and verify the selected setup."

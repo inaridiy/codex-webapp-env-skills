@@ -9,14 +9,17 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
 
 ## Workflow
 
-1. Inspect the target repository first: package manager, app directories, existing `AGENTS.md`, existing `.agents`, package scripts, Vite/TanStack/Playwright/Testcontainers usage, and dirty git state.
-2. Determine whether modules were explicitly selected.
+1. Before module selection or file edits, run `git status --short`.
+   - If there are staged, unstaged, or untracked files, warn the user and stop. Ask them to commit, stash, or otherwise resolve the worktree before continuing.
+   - Do not inspect around the dirty state by guessing ownership. This skill changes repository-wide setup files, so a clean baseline is required.
+2. Inspect the target repository: package manager, app directories, existing `AGENTS.md`, existing `.agents`, package scripts, Vite/TanStack/Playwright/Testcontainers usage, generated-file conventions, formatting/lint conventions, and current validation commands.
+3. Determine whether modules were explicitly selected.
    - Treat modules as selected only when the user names module ids, says `all`, or gives an unambiguous natural-language request that maps to specific modules.
    - Generic requests such as "set this repo up", "make it good", "give this repo a nice setup", or "modern webapp environment" are not explicit module selections.
    - If the user did not explicitly select modules, stop before applying anything and ask what to install. Present a checkbox-style module list in chat. If a structured UI input tool is available, use it; otherwise ask for comma-separated module ids and optional natural-language notes.
    - Do not silently choose the recommended default. Use recommended modules only after the user chooses "recommended", presses Enter in the bundled script prompt, or otherwise confirms that default set.
    - On an interactive terminal, running the bundled script without `--modules` or `--all` is acceptable because the script prompts for module selection.
-3. Read only the references for selected modules:
+4. Read only the references for selected modules:
    - ExecPlans: `references/execplans.md`
    - Vite+: `references/vite-plus.md`
    - TanStack Start: `references/tanstack-start.md`
@@ -33,9 +36,14 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
    - Validation gates: `references/validation-gates.md`
    - Workspace supply-chain: `references/workspace-supply-chain.md`
    - License-safe extraction: `references/license-safe-extraction.md`
-4. Run or adapt `scripts/apply-modern-webapp-environment.mjs`. Prefer `--dry-run` first on existing repositories.
-5. Review generated files before finalizing. Keep existing local conventions when they are stronger than the template.
-6. Run the validation commands suggested by the generated `AGENTS.md` and the selected module references.
+5. Run or adapt `scripts/apply-modern-webapp-environment.mjs`. Prefer `--dry-run` first on existing repositories.
+6. Review generated files before finalizing.
+   - Check whether generated files fit the repository's package manager, script names, app layout, path aliases, formatting style, naming conventions, test layout, docs layout, and existing tool configuration.
+   - If a generated file conflicts with an existing convention, adapt the generated content to the local convention rather than forcing the template.
+   - If a file already exists, merge narrowly into the established structure. Do not duplicate sections, create parallel config styles, or overwrite stronger local rules.
+   - Record unresolved fit issues in `.agents/environment-setup-notes.md` before finalizing.
+7. Run the validation commands suggested by the generated `AGENTS.md` and the selected module references.
+8. Before the final response, report the selected modules, what was changed, which module acceptance checks passed, and any blocked checks.
 
 ## Module IDs
 
@@ -56,6 +64,28 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
 - `validation-gates`: add aggregate and focused validation gate rules.
 - `workspace-supply-chain`: add pnpm workspace catalog/trust-policy scaffold when safe.
 - `license-safe`: add license-safe extraction rules for skills, prompts, vendored snippets, and external templates.
+
+## Module Acceptance Checks
+
+For every selected module, verify the corresponding acceptance condition before finalizing:
+
+- `execplans`: `AGENTS.md` points to `.agents/PLANS.md`, `.agents/PLANS.md` exists, and `.agents/execplans/` exists.
+- `vite-plus`: `vp` is the documented command gateway, package scripts/config do not conflict with existing package-manager conventions, and the intended `vp check`/`vp test` commands are documented.
+- `tanstack-start`: app files are under the selected `--app-dir`, route/server-only boundaries match the existing app layout, and no server-only dependency is imported directly into client-facing routes.
+- `playwright-pom`: Playwright config, specs, and Page Object classes exist in the repository's test layout, and POM classes do not create fixtures or seed data.
+- `testcontainers-e2e`: E2E support uses dynamic ports, isolated database/container setup, and per-run output paths suitable for parallel runs.
+- `review-toolchain`: similarity review, Knip, and dependency-boundary commands are documented through the repository's command gateway, and generated/vendored exclusions are explicit.
+- `commit-governance`: commitlint/hook guidance exists, generated hook files are executable when applicable, and the guidance says not to stage unrelated user changes.
+- `spec-governance`: `docs/specs` exists with dated revision-note guidance and a clear split between specs, ExecPlans, and agent workflow rules.
+- `typed-env`: server/public env boundaries exist, production secrets have no unsafe defaults, and env access is kept in composition roots.
+- `di-boundaries`: usecases receive explicit dependency objects and composition roots are separated from pure application logic.
+- `test-factories`: factories are pure builders with overrides and do not perform database, network, repository, or global side effects.
+- `skill-lifecycle`: project-local skill guidance exists, forward-testing/evaluation is required, and external skills are installed/locked rather than copied when licensing is unclear.
+- `review-rubric`: review guidance prioritizes concrete findings, side-effect boundaries, type-safety, test sufficiency, and dependency-boundary drift.
+- `generated-boundaries`: generated/vendored inventories are named, protected from accidental deletion, and shared across review tooling where practical.
+- `validation-gates`: aggregate and focused validation commands are documented, including how to record blockers for Docker, browsers, or external services.
+- `workspace-supply-chain`: workspace version/trust policy is documented without weakening existing package-manager protections.
+- `license-safe`: distributable assets exclude secrets, customer data, proprietary prompts, private docs, and project-specific service identifiers; license/notice obligations are preserved when external material is used.
 
 Recommended default, only after the user confirms it:
 
