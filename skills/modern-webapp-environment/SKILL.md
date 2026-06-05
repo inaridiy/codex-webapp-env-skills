@@ -10,7 +10,12 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
 ## Workflow
 
 1. Inspect the target repository first: package manager, app directories, existing `AGENTS.md`, existing `.agents`, package scripts, Vite/TanStack/Playwright/Testcontainers usage, and dirty git state.
-2. If the user did not specify modules, present a checkbox-style module list in chat. If a structured UI input tool is available, use it; otherwise ask for comma-separated module ids and optional natural-language notes.
+2. Determine whether modules were explicitly selected.
+   - Treat modules as selected only when the user names module ids, says `all`, or gives an unambiguous natural-language request that maps to specific modules.
+   - Generic requests such as "set this repo up", "make it good", "give this repo a nice setup", or "modern webapp environment" are not explicit module selections.
+   - If the user did not explicitly select modules, stop before applying anything and ask what to install. Present a checkbox-style module list in chat. If a structured UI input tool is available, use it; otherwise ask for comma-separated module ids and optional natural-language notes.
+   - Do not silently choose the recommended default. Use recommended modules only after the user chooses "recommended", presses Enter in the bundled script prompt, or otherwise confirms that default set.
+   - On an interactive terminal, running the bundled script without `--modules` or `--all` is acceptable because the script prompts for module selection.
 3. Read only the references for selected modules:
    - ExecPlans: `references/execplans.md`
    - Vite+: `references/vite-plus.md`
@@ -52,7 +57,7 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
 - `workspace-supply-chain`: add pnpm workspace catalog/trust-policy scaffold when safe.
 - `license-safe`: add license-safe extraction rules for skills, prompts, vendored snippets, and external templates.
 
-Recommended default:
+Recommended default, only after the user confirms it:
 
 ```bash
 node /path/to/skills/modern-webapp-environment/scripts/apply-modern-webapp-environment.mjs \
