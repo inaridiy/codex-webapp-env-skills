@@ -1,0 +1,4 @@
+interface:
+  display_name: "Modern Webapp Environment"
+  short_description: "Bootstrap Codex-friendly webapp tooling"
+  default_prompt: "Use $modern-webapp-environment to add ExecPlans, Vite+, review tooling, and E2E scaffolding to this repo."

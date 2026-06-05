@@ -1,0 +1,43 @@
+# ExecPlan Module
+
+Use this module when the target repository should support long-running, resumable implementation plans.
+
+## What To Add
+
+- `AGENTS.md` rules that say complex features and significant refactors use an ExecPlan.
+- `.agents/PLANS.md` with the required ExecPlan contract.
+- `.agents/execplans/.gitkeep` so plan files have a stable home.
+
+## Pattern
+
+An ExecPlan is a self-contained implementation specification. It must be understandable by a novice who only has the current working tree and the plan file. It must maintain these sections:
+
+- `Purpose / Big Picture`
+- `Progress`
+- `Surprises & Discoveries`
+- `Decision Log`
+- `Outcomes & Retrospective`
+- `Context and Orientation`
+- `Plan of Work`
+- `Concrete Steps`
+- `Validation and Acceptance`
+- `Idempotence and Recovery`
+- `Artifacts and Notes`
+- `Interfaces and Dependencies`
+
+Plan filenames must start with an ISO UTC datetime and a descriptive name, for example:
+
+```text
+.agents/execplans/2026-06-05T170041Z_feature-name.md
+```
+
+Progress entries should include timestamps:
+
+```text
+- [x] (2026-06-05 17:00Z) Read relevant project configuration and wrote the first plan draft.
+- [ ] Implement the first milestone and update this plan before stopping.
+```
+
+## Agent Rule
+
+When implementing an ExecPlan, do not ask for next steps after each milestone. Continue, update the plan at every stopping point, and keep validation evidence in the plan.
