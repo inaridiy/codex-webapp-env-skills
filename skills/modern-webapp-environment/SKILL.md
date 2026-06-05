@@ -38,6 +38,8 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
    - License-safe extraction: `references/license-safe-extraction.md`
 5. Run or adapt `scripts/apply-modern-webapp-environment.mjs`. Prefer `--dry-run` first on existing repositories.
 6. Review generated files before finalizing.
+   - If `execplans` is selected, keep a top-level `# ExecPlans` section near the top of `AGENTS.md` with the canonical trigger sentence: `When writing complex features or significant refactors, use an ExecPlan (as described in .agents/PLANS.md) from design to implementation.`
+   - Do not weaken the ExecPlan trigger into softer wording such as "use .agents/PLANS.md for significant features" or bury it only inside generic working rules.
    - Check whether generated files fit the repository's package manager, script names, app layout, path aliases, formatting style, naming conventions, test layout, docs layout, and existing tool configuration.
    - If a generated file conflicts with an existing convention, adapt the generated content to the local convention rather than forcing the template.
    - If a file already exists, merge narrowly into the established structure. Do not duplicate sections, create parallel config styles, or overwrite stronger local rules.
@@ -69,7 +71,7 @@ Use this skill to turn a repository into a Codex-friendly modern webapp workspac
 
 For every selected module, verify the corresponding acceptance condition before finalizing:
 
-- `execplans`: `AGENTS.md` points to `.agents/PLANS.md`, `.agents/PLANS.md` exists, and `.agents/execplans/` exists.
+- `execplans`: `AGENTS.md` has a top-level `# ExecPlans` section near the top, includes the canonical trigger sentence, `.agents/PLANS.md` exists, and `.agents/execplans/` exists.
 - `vite-plus`: `vp` is the documented command gateway, package scripts/config do not conflict with existing package-manager conventions, and the intended `vp check`/`vp test` commands are documented.
 - `tanstack-start`: app files are under the selected `--app-dir`, route/server-only boundaries match the existing app layout, and no server-only dependency is imported directly into client-facing routes.
 - `playwright-pom`: Playwright config, specs, and Page Object classes exist in the repository's test layout, and POM classes do not create fixtures or seed data.
